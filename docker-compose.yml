@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  svelte-frontend:
+    image: svelte-docker-node
+
+    build:
+      context: /svelte-build-project
+      dockerfile: Dockerfile
+      target: deploy-node
+    ports:
+      - "5050:5050"
+  strapi-backend:
+    image: basic_strapi
+    container_name: strapi
+    env_file:
+      - /basic_strapi/.env
+
+    build:
+      context: /basic_strapi
+      dockerfile: Dockerfile
+      target: deploy-node
+    ports:
+      - "1337:1337"
+
+
