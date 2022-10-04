@@ -25,28 +25,71 @@
 
 version: '3'
 services:
-  frontend:
-    container_name: ${PROJECT_SLUG}_frontend
+  # frontend:
+  #   container_name: ${PROJECT_SLUG}_frontend
+  #   build:
+  #     context: .
+  #     dockerfile: ./Dockerfile
+  #     args:
+  #       - NODE_ENV=${ENVIRONMENT}
+  #   restart: unless-stopped
+  #   networks:
+  #     - internal
+  #   volumes:
+  #     - ./svelte-build-project:/build
+  #     - /app/node_modules
+  #     - /app/.svelte-kit
+  #     - ./logs/svelte-build-project:/root/.npm/_logs
+  #   env_file:
+  #     - ./.env
+  #   ports:
+  #     - "5000:5000"
+
+  backend:
+    container_name: ${PROJECT_SLUG}_backend
     build:
       context: .
       dockerfile: ./Dockerfile
       args:
         - NODE_ENV=${ENVIRONMENT}
     restart: unless-stopped
+    env_file: ./.env
+    environment:
+      DATABASE_CLIENT: ${DATABASE_CLIENT}
+      DATABASE_HOST: mysql
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PORT: ${DATABASE_PORT}
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      NODE_ENV: ${ENVIRONMENT}
+    volumes:
+      - ./basic_strapi:/app
+      - /app/node_modules
+      - ./.env:/app/.env
     networks:
       - internal
+    depends_on:
+      - mysql-database
+
+  mysql-database:
+    image: mysql:8.0.30
+    container_name: ${PROJECT_SLUG}_mysql
+    platform: linux/amd64
+    restart: always
+    env_file: ./.env
+    environment:
+      MYSQL_ROOT_USER: ${DATABASE_USERNAME}
+      MYSQL_ROOT_PASSWORD: ${DATABASE_PASSWORD}
+      MYSQL_DATABASE: ${DATABASE_NAME}
     volumes:
-      - ./svelte-build-project:/build
-      - /app/node_modules
-      - /app/.svelte-kit
-      - ./logs/svelte-build-project:/root/.npm/_logs
-    env_file:
-      - ./.env
-    ports:
-      - "5000:5000"
+      - mysql-data:/var/lib/mysql/data/
+    networks:
+      - internal
 
 volumes:
-  postgres-data:
+  mysql-data:
 
 networks:
   internal:
