@@ -1,26 +1,100 @@
+# version: '3'
+
+# services:
+#   svelte-frontend:
+#     image: svelte-docker-node
+
+#     build:
+#       context: /svelte-build-project
+#       dockerfile: Dockerfile
+#       target: deploy-node
+#     ports:
+#       - "5050:5050"
+  # strapi-backend:
+  #   image: strapi/strapi
+  #   container_name: strapi
+  #   env_file:
+  #     - /basic_strapi/.env
+
+  #   build:
+  #     context: /basic_strapi
+  #     dockerfile: Dockerfile
+  #     target: deploy-node
+  #   ports:
+  #     - "1337:1337"
+
 version: '3'
-
 services:
-  svelte-frontend:
-    image: svelte-docker-node
+  # frontend:
+  #   container_name: ${PROJECT_SLUG}_frontend
+  #   build:
+  #     context: .
+  #     dockerfile: ./Dockerfile
+  #     args:
+  #       - NODE_ENV=${ENVIRONMENT}
+  #   restart: unless-stopped
+  #   networks:
+  #     - internal
+  #   volumes:
+  #     - ./svelte-build-project:/build
+  #     - /app/node_modules
+  #     - /app/.svelte-kit
+  #     - ./logs/svelte-build-project:/root/.npm/_logs
+  #   env_file:
+  #     - ./.env
+  #   ports:
+  #     - "5000:5000"
 
+  backend:
+    container_name: ${PROJECT_SLUG}_backend
     build:
-      context: /svelte-build-project
-      dockerfile: Dockerfile
-      target: deploy-node
-    ports:
-      - "5050:5050"
-  strapi-backend:
-    image: basic_strapi
-    container_name: strapi
-    env_file:
-      - /basic_strapi/.env
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        - NODE_ENV=${ENVIRONMENT}
+    restart: unless-stopped
+    env_file: ./.env
+    environment:
+      NODE_ENV: ${ENVIRONMENT}
+      DATABASE_CLIENT: ${DATABASE_CLIENT}
+      DATABASE_HOST: mysql
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PORT: ${DATABASE_PORT}
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_SSL: 'false'
+    volumes:
+      - ./basic_strapi:/app
+      - /app/node_modules
+      - ./.env:/app/.env
+    working_dir: /app
+    networks:
+      - internal
+    depends_on:
+      - mysql-database
 
-    build:
-      context: /basic_strapi
-      dockerfile: Dockerfile
-      target: deploy-node
-    ports:
-      - "1337:1337"
+  mysql-database:
+    image: mysql:8.0.30
+    container_name: ${PROJECT_SLUG}_mysql
+    platform: linux/amd64
+    restart: always
+    env_file: ./.env
+    environment:
+      MYSQL_USER: ${DATABASE_USERNAME}
+      MYSQL_ROOT_PASSWORD: ${DATABASE_PASSWORD}
+      MYSQL_DATABASE: ${DATABASE_NAME}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - internal
 
+volumes:
+  mysql-data:
 
+networks:
+  internal:
+    name: ${PROJECT_SLUG}_internal
+    driver: bridge
