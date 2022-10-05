@@ -52,5 +52,8 @@ COPY ./basic_strapi /backend/app
 
 EXPOSE 1337
 
+# For production build
+ENV NODE_ENV=${NODE_ENV}
+
 # Run yarn dev, as we would via the command line 
 CMD ["node", "build"]
